@@ -1,26 +1,37 @@
-const express = require("express")
-const connectToDb = require("./database/databaseConnect")
-const app = express()
-const Blog = require("./model/blogmodel.js")
+const express = require("express");
+const connectToDb = require("./database/databaseConnect");
+const Blog = require("./model/blogmodel.js");
+const app = express();
 
-connectToDb()
-app.use(express.json())
-app.use(express.urlencoded({extended:true}))
+const {multer,storage}=require('./middleware/multerConfig');
+const upload = multer({storage:storage});
 
+app.use(express.json());
+app.use(express.urlencoded({extended:true}));
 
-app.get("/",(req,res)=>{
-    res.send("<h1>hahaha,thi oih s iugijjg is homeppage</h1>")
+connectToDb();
+
+app.use(express.static("./images"))
+app.set('view engine','ejs')
+
+app.get("/",async (req,res)=>{
+    const blogs=await Blog.find()
+    res.render("home.ejs",{blogs:blogs})
     })
 
+
 app.get("/about",(req,res)=>{
-        const name = "Pooja Rana"
-        const contact = "Contactform"
-        res.render("about.ejs",{name,contact})
+        const name = "PooJa Rana"
+        res.render("about.ejs",{name:name})
 })
 
-app.get("/createblog",(req,res)=>{
+app.get("/contact",(req,res)=>{
+    res.render("createblog.ejs")
+})
 
-   res.render("createblog.ejs")
+
+app.get("/createblog",(req,res)=>{
+    res.render("createblog.ejs")
 })
 
 // app.get("/about",(req,res)=>{
@@ -31,20 +42,23 @@ app.get("/createblog",(req,res)=>{
 
 
 
-app.post("/createblog", async(req,res)=>{
-    const{title,subtitle,description} = req.body
-    console.log(title,subtitle,description)
+app.post("/createblog",upload.single('image') ,async (req,res)=>{
+    const fileName=req.file.filename;
+
+    const{title,subtitle,description} = req.body;
+    console.log(title,subtitle,description);
     // console.log(req.body);
    await Blog.create({
-        title,
-        subtitle,
-        description
+        title:title,
+        subtitle:subtitle,
+        description:description,
+        image:fileName
 
     })
-    res.send("Post hitted")
+    res.send("Blog Created Successfully.")
 })
 
 
 app.listen(3000,()=>{
-    console.log("Nodejs training.",3000)
+    console.log("Nodejs has started at port."+3000);
 })
