@@ -5,10 +5,7 @@ const storage = multer.diskStorage({
         cb(null,'./storage')
     },
     filename:function(req,file,cb){
-        cb(null,file.originalname)
+        cb(null,Date.now()+"-"+file.originalname)
     }
 })
-module.exports={
-    multer,
-    storage
-}
+module.exports={ multer,storage}

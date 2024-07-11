@@ -3,7 +3,7 @@ const Schema = mongoose.Schema
 
 const blogSchema = new Schema({
     title : {
-        type: String
+        type: String 
     },
     subtitle: {
         type: String
@@ -13,8 +13,8 @@ const blogSchema = new Schema({
     },
     image:{
         type:String
-    },
+    }
 
-});
+})
 const Blog = mongoose.model("Blog",blogSchema)
 module.exports = Blog;

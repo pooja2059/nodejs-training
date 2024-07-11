@@ -1,6 +1,7 @@
 const express = require("express");
 const connectToDb = require("./database/databaseConnect");
 const Blog = require("./model/blogmodel.js");
+const bcrypt= require("bcrypt");
 const app = express();
 
 const {multer,storage}=require('./middleware/multerConfig');
@@ -23,7 +24,7 @@ app.set('view engine','ejs')
 //     res.render("home.ejs",{blogs})
 // })
 
-app.get("/",async (req,res)=>{
+app.get("/home",async (req,res)=>{
     const blogs = await Blog.find() // always returns arrray 
     res.render("home.ejs",{blogs})
 })
@@ -33,40 +34,79 @@ app.get("/about",(req,res)=>{
         res.render("about.ejs",{name})
 })
 
-app.get("/createblog",(req,res)=>{
-    res.render("createblog.ejs")
+app.get("/contact",(req,res)=>{
+    res.render("contact.ejs")
 })
+
+app.get("/form",(req,res)=>{
+    res.render("form.ejs")
+})
+
+app.get("/createblog",(req,res)=>{
+    res.render("./createblog.ejs")
+})    
 
 app.get("/blog/:id",async (req,res)=>{
     const id = req.params.id
     // console.log(id)
     const blog= await Blog.findById(id)
     // console.log(blog)
-    res.render("./blog.ejs",{blog})
-})
+    res.render("blog.ejs",{blog})
+})    
 
 app.get("/deleteblog/:id"),async(req,res)=>{
     const id = req.params.id
-    await Blog.findByIdAndDelete(id)
-    res.redirect("/")
-}
+    const remove=await Blog.findByIdAndDelete(id)
+    res.redirect("/home")
+}    
 
-app.get("/editblog/:id",(req,res)=>{
-    res.render("editblog.ejs")
+app.get("/editblog/:id",async(req,res)=>{
+
+    // const id = req.params.id;
+    // const blog=await Blog.findById(id);
+    res.render("register.ejs")
+})    
+
+app.get("/register",(req,res)=>{
+    res.render("register.ejs")
+})    
+  
+app.post("/register" ,async (req,res)=>{
+    const{username,email,password} = req.body;
+    await User.create({
+        username:username,
+        email:email,
+        password:bcrypt.hashSync(password,10),
+ })
+    res.redirect("/login")
 })
 
-app.get("/contact",(req,res)=>{
-    res.render("createblog.ejs")
-})
+app.get("/login",(req,res)=>{
 
+    res.render("login.ejs")
+})    
+
+app.post("/login" ,async (req,res)=>{
+    const{email,password} = req.body;
+    const user=await User.find({email:email})
+    if(user.length===0){
+        res.send("Invalid email or password")
+    }else{
+        //check password
+       const isMatched =  bcrypt.compareSync(password,user[0].password)
+       if(!isMatched){
+        res.send("Invalid password")
+       }else{
+        res.send("Logged in successfully")
+       }
+    }
+})
 
 
 // app.get("/about",(req,res)=>{
 //     const contact = "Contactform"
 //     res.render("about.ejs",{contact})
 // })
-
-
 
 
 app.post("/createblog",upload.single('image') ,async (req,res)=>{
@@ -76,9 +116,9 @@ app.post("/createblog",upload.single('image') ,async (req,res)=>{
     console.log(title,subtitle,description);
     // console.log(req.body);
    await Blog.create({
-        title,
-        subtitle,
-        description,
+        title:title,
+        subtitle:subtitle,
+        description:description,
         image:fileName
 
     })
