@@ -1,10 +1,16 @@
+
+
+
+require("dotenv").config()
 const express = require("express");
 const connectToDb = require("./database/databaseConnect");
 const Blog = require("./model/blogmodel.js");
-const bcrypt= require("bcrypt");
+const bcrypt= require('bcrypt');
+const jwt = require("jsonwebtoken")
 const app = express();
 
 const {multer,storage}=require('./middleware/multerConfig');
+const User = require("./model/usermodel.js");
 const upload = multer({storage:storage});
 
 connectToDb();
@@ -24,7 +30,7 @@ app.set('view engine','ejs')
 //     res.render("home.ejs",{blogs})
 // })
 
-app.get("/home",async (req,res)=>{
+app.get("/home",isAuthenticated,async (req,res)=>{
     const blogs = await Blog.find() // always returns arrray 
     res.render("home.ejs",{blogs})
 })
@@ -42,7 +48,8 @@ app.get("/form",(req,res)=>{
     res.render("form.ejs")
 })
 
-app.get("/createblog",(req,res)=>{
+app.get("/createblog",isAuthenticated,(req,res)=>{
+    console.log(req,userId)
     res.render("./createblog.ejs")
 })    
 
@@ -62,32 +69,32 @@ app.get("/deleteblog/:id"),async(req,res)=>{
 
 app.get("/editblog/:id",async(req,res)=>{
 
-    // const id = req.params.id;
-    // const blog=await Blog.findById(id);
-    res.render("register.ejs")
+     const id = req.params.id;
+     const blog=await Blog.findById(id);
+    res.render("editblog.ejs",{blog})
 })    
 
 app.get("/register",(req,res)=>{
     res.render("register.ejs")
 })    
   
-app.post("/register" ,async (req,res)=>{
-    const{username,email,password} = req.body;
+app.post("/register",async (req,res)=>{
+    const {username,email,password} = req.body 
     await User.create({
-        username:username,
-        email:email,
-        password:bcrypt.hashSync(password,10),
- })
+        username : username, 
+        email : email, 
+        password : bcrypt.hashSync(password,12)
+    })
     res.redirect("/login")
 })
 
 app.get("/login",(req,res)=>{
-
-    res.render("login.ejs")
+     res.render("login.ejs")
 })    
 
 app.post("/login" ,async (req,res)=>{
     const{email,password} = req.body;
+    console.log(email,password);
     const user=await User.find({email:email})
     if(user.length===0){
         res.send("Invalid email or password")
@@ -97,11 +104,18 @@ app.post("/login" ,async (req,res)=>{
        if(!isMatched){
         res.send("Invalid password")
        }else{
+        const token = jwt.sign({userId:user[0]._id},process.env.SECRET,{
+            expiresIn : '20d'
+        })
+        res.cookie("token",token)
         res.send("Logged in successfully")
        }
     }
 })
 
+const cookieParser = require('cookie-parser');
+const isAuthenticated = require("./middleware/isAuthenticated.js");
+app.use(cookieParser())
 
 // app.get("/about",(req,res)=>{
 //     const contact = "Contactform"
@@ -126,6 +140,7 @@ app.post("/createblog",upload.single('image') ,async (req,res)=>{
 })
 
 app.use(express.static("./storage"))
+app.use(express.static("./public"))
 
 app.listen(3000,()=>{
     console.log("Nodejs has started at port."+3000);
