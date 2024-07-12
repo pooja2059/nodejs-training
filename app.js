@@ -8,9 +8,11 @@ const Blog = require("./model/blogmodel.js");
 const bcrypt= require('bcrypt');
 const jwt = require("jsonwebtoken")
 const app = express();
-
+const cookieParser = require('cookie-parser');
+app.use(cookieParser())
 const {multer,storage}=require('./middleware/multerConfig');
 const User = require("./model/usermodel.js");
+const isAuthenticated=require("./middleware/isAuthenticated.js")
 const upload = multer({storage:storage});
 
 connectToDb();
@@ -30,7 +32,7 @@ app.set('view engine','ejs')
 //     res.render("home.ejs",{blogs})
 // })
 
-app.get("/home",isAuthenticated,async (req,res)=>{
+app.get("/",isAuthenticated,async (req,res)=>{
     const blogs = await Blog.find() // always returns arrray 
     res.render("home.ejs",{blogs})
 })
@@ -49,7 +51,8 @@ app.get("/form",(req,res)=>{
 })
 
 app.get("/createblog",isAuthenticated,(req,res)=>{
-    console.log(req,userId)
+    // console.log(process.env.SECRET);
+    // console.log(req,userId)
     res.render("./createblog.ejs")
 })    
 
@@ -94,7 +97,7 @@ app.get("/login",(req,res)=>{
 
 app.post("/login" ,async (req,res)=>{
     const{email,password} = req.body;
-    console.log(email,password);
+    console.log(process.env.SECRET);
     const user=await User.find({email:email})
     if(user.length===0){
         res.send("Invalid email or password")
@@ -113,9 +116,6 @@ app.post("/login" ,async (req,res)=>{
     }
 })
 
-const cookieParser = require('cookie-parser');
-const isAuthenticated = require("./middleware/isAuthenticated.js");
-app.use(cookieParser())
 
 // app.get("/about",(req,res)=>{
 //     const contact = "Contactform"
